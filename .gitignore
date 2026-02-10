@@ -7,6 +7,8 @@ btaskee/dist/
 
 
 
-migration_gui/node_modules
+migration_gui/node_modules/
 migration_gui/.env
-migration_gui/data
+migration_gui/data/
+.vscode/
+.DS_Store
