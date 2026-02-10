@@ -1,3 +1,12 @@
-btaskee/node_modules
+btaskee/.DS_Store
+btaskee/node_modules/
+btaskee/attachments/
+btaskee/data/
+btaskee/.env
+btaskee/dist/
+
+
+
 migration_gui/node_modules
+migration_gui/.env
 migration_gui/data
