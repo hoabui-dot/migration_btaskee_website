@@ -1,0 +1,40 @@
+services:
+  migration-gui:
+    image: vanhoadotbui2628/migration_gui:latest
+    container_name: btaskee-migration-gui
+    ports:
+      - "3334:3334"
+    env_file:
+      - .env
+    depends_on:
+      migration-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - migration-network
+
+  migration-postgres:
+    image: postgres:15-alpine
+    container_name: migration-tracking-db
+    env_file:
+      - .env.migration_postgres
+    volumes:
+      - migration-db-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+    networks:
+      - migration-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U migration_user -d migration_tracking"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  migration-db-data:
+    driver: local
+
+networks:
+  migration-network:
+    driver: bridge

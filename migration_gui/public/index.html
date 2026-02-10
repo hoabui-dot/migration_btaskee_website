@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bTaskee Migration GUI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 bTaskee Migration Dashboard</h1>
+            <p>WordPress → Directus CMS Migration Tool</p>
+        </header>
+
+        <!-- Template Selection -->
+        <div class="card template-selection">
+            <h2>📄 Step 1: Configure Migration Settings</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+                Select templates, folder, and author for the migration. Enter search terms and press Enter or click Search.
+            </p>
+            
+            <div class="template-inputs">
+                <div class="template-input-group">
+                    <label for="post-template-search">Post Detail Template:</label>
+                    <input type="text" id="post-template-search" placeholder="e.g., Blogs detail template" />
+                    <button id="btn-search-post-template" class="btn btn-small btn-secondary">Search</button>
+                    <div id="post-template-result" class="template-result"></div>
+                </div>
+                
+                <div class="template-input-group">
+                    <label for="collection-template-search">Collection Listing Template:</label>
+                    <input type="text" id="collection-template-search" placeholder="e.g., Nested Collection" />
+                    <button id="btn-search-collection-template" class="btn btn-small btn-secondary">Search</button>
+                    <div id="collection-template-result" class="template-result"></div>
+                </div>
+                
+                <div class="template-input-group">
+                    <label for="folder-search">Media Upload Folder:</label>
+                    <input type="text" id="folder-search" placeholder="e.g., Blog Images, Uploads" />
+                    <button id="btn-search-folder" class="btn btn-small btn-secondary">Search</button>
+                    <div id="folder-result" class="template-result"></div>
+                </div>
+                
+                <div class="template-input-group">
+                    <label for="author-search">Post Author (Email):</label>
+                    <input type="email" id="author-search" placeholder="e.g., admin@btaskee.com" />
+                    <button id="btn-search-author" class="btn btn-small btn-secondary">Search</button>
+                    <div id="author-result" class="template-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="label">Status:</span>
+                <span id="status" class="badge badge-idle">Idle</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Current Step:</span>
+                <span id="current-step">-</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Duration:</span>
+                <span id="duration">-</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ Step 2: Migration Controls</h2>
+            <div class="actions">
+                <button id="btn-init" class="btn btn-secondary">
+                    <span class="icon">🔧</span> Initialize Database
+                </button>
+                <div class="migration-controls">
+                    <div class="migration-options">
+                        <label class="radio-option">
+                            <input type="radio" name="migration-mode" value="test" checked>
+                            <span>Test Migration (with limit)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="migration-mode" value="full">
+                            <span>Full Migration (all data)</span>
+                        </label>
+                    </div>
+                    <div class="migration-limit-input" id="limit-input-container">
+                        <label for="migration-limit">Limit:</label>
+                        <input type="number" id="migration-limit" min="1" max="10000" value="" placeholder="e.g., 50" required>
+                        <span class="limit-hint">items per table (required)</span>
+                    </div>
+                    <button id="btn-migrate" class="btn btn-primary">
+                        <span class="icon">▶️</span> Start Migration
+                    </button>
+                </div>
+                <button id="btn-stop" class="btn btn-danger" disabled>
+                    <span class="icon">⏹️</span> Stop
+                </button>
+                <button id="btn-refresh" class="btn btn-secondary">
+                    <span class="icon">🔄</span> Refresh Stats
+                </button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="progress">Progress</button>
+            <button class="tab-btn" data-tab="stats">Statistics</button>
+            <button class="tab-btn" data-tab="failed">Failed Items</button>
+            <button class="tab-btn" data-tab="replace">Replace Image</button>
+            <button class="tab-btn" data-tab="clean">Clean Data</button>
+            <button class="tab-btn" data-tab="logs">Logs</button>
+        </div>
+
+        <!-- Progress Tab -->
+        <div id="tab-progress" class="tab-content active">
+            <div class="card">
+                <h2>Migration Progress</h2>
+                <div id="progress-container">
+                    <p class="empty-state">No migration running. Click "Start Migration" to begin.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="tab-stats" class="tab-content">
+            <div class="card">
+                <h2>Migration Statistics</h2>
+                <div id="stats-container">
+                    <p class="empty-state">Loading statistics...</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Recent Batches</h2>
+                <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Click rollback to undo a migration batch</p>
+                <div id="batches-container">
+                    <p class="empty-state">No batches found.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Failed Items Tab -->
+        <div id="tab-failed" class="tab-content">
+            <div class="card">
+                <h2>Failed Items</h2>
+                <div class="filter-bar">
+                    <select id="batch-selector">
+                        <option value="">All Batches</option>
+                    </select>
+                    <input type="text" id="filter-table" placeholder="Filter by table...">
+                    <input type="text" id="filter-error" placeholder="Filter by error...">
+                </div>
+                <div id="failed-summary" style="margin-bottom: 16px;"></div>
+                <div id="failed-container">
+                    <p class="empty-state">Loading failed items...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Replace Image Tab -->
+        <div id="tab-replace" class="tab-content">
+            <div class="card">
+                <h2>🖼️ Replace Image in Database</h2>
+                <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+                    Upload a new image and replace an old image ID in a JSON field (e.g., TipTap content).
+                </p>
+                
+                <div class="replace-image-form">
+                    <div class="form-group">
+                        <label for="old-image-id">Old Image Directus ID:</label>
+                        <input type="text" id="old-image-id" placeholder="e.g., 22b7e3dc-9879-41c6-b4a2-d9b7357c8388" />
+                        <span class="form-hint">The UUID of the image to replace</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="target-table">Table Name:</label>
+                        <input type="text" id="target-table" placeholder="e.g., pages_translations" />
+                        <span class="form-hint">The database table containing the JSON field</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="target-field">Field Name:</label>
+                        <input type="text" id="target-field" placeholder="e.g., content" />
+                        <span class="form-hint">The JSON field name containing the image reference</span>
+                    </div>
+                    
+                    <div class="form-divider">
+                        <span>Upload Method</span>
+                    </div>
+                    
+                    <div class="upload-method-selector">
+                        <label class="radio-option">
+                            <input type="radio" name="upload-method" value="url" checked>
+                            <span>📥 Use Image URL (download & upload)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="upload-method" value="file">
+                            <span>📁 Upload Local File</span>
+                        </label>
+                    </div>
+                    
+                    <div id="url-upload-section" class="upload-section">
+                        <div class="form-group">
+                            <label for="image-url">Image URL:</label>
+                            <input type="url" id="image-url" placeholder="https://example.com/image.jpg" />
+                            <span class="form-hint">The URL will be downloaded and uploaded to Directus</span>
+                        </div>
+                    </div>
+                    
+                    <div id="file-upload-section" class="upload-section" style="display: none;">
+                        <div class="form-group">
+                            <label for="image-file">Select Image File:</label>
+                            <input type="file" id="image-file" accept="image/*" />
+                            <span class="form-hint">Choose an image file from your computer</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="btn-replace-image" class="btn btn-primary">
+                            <span class="icon">🔄</span> Replace Image
+                        </button>
+                    </div>
+                    
+                    <div id="replace-result" class="replace-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clean Data Tab -->
+        <div id="tab-clean" class="tab-content"></div>
+            <div class="card">
+                <h2>Clean Data</h2>
+                <p style="color: #f44336; font-size: 14px; margin-bottom: 16px;">⚠️ Warning: This will permanently delete data from the database!</p>
+                
+                <div class="clean-section">
+                    <h3>Clean All Tables</h3>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Remove all migrated data from all tables and reset migration tracking.</p>
+                    <button id="btn-clean-all" class="btn btn-danger">🗑️ Clean All Tables</button>
+                </div>
+                
+                <div class="clean-section">
+                    <h3>Clean Specific Table</h3>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Remove all data from a specific table.</p>
+                    <div id="table-counts" class="table-counts">
+                        <p class="empty-state">Loading table counts...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="tab-logs" class="tab-content">
+            <div class="card">
+                <div class="logs-header">
+                    <h2>Migration Logs</h2>
+                    <button id="btn-clear-logs" class="btn btn-small">Clear</button>
+                </div>
+                <div id="logs-container" class="logs">
+                    <p class="empty-state">No logs yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
